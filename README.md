@@ -31,6 +31,30 @@ Nothing to install beyond ComfyUI and the models. No custom node packs.
 
 ---
 
+## Changes in v1.1
+
+**v1.0 had a broken reference-image path — please re-download.** `LoadImage`
+returns the file's original resolution, not the canvas, so the 1.2x reference
+zoom cropped a small patch from the top-left corner of large images instead of
+centring on the subject. The guide was effectively meaningless and renders
+behaved like text-to-video. Fixed: scale to exactly 1.2x canvas with a centre
+crop, then centre-crop back down.
+
+Also in v1.1, all aimed at mouth motion and voice consistency:
+
+* **Guide strength 1.0 -> 0.9.** At 1.0 the first frame's noise mask is 0.0 —
+  frame 0 is *completely locked* to the still, and the model struggles to
+  animate away from a closed mouth.
+* **Head trim: 28 frames on shot 1, 14 on shot 2** (audio trimmed to match).
+  The opening frames morph out of the guide and are where lip sync is worst;
+  shot 1 opens practically *on* the reference, so it needs more.
+* **Identity guidance on the voice reference.** Both builds now use core
+  `LTXVReferenceAudio`, which patches the model with an extra forward pass
+  without the reference and amplifies the speaker difference. The voice no
+  longer drifts between shots.
+
+---
+
 ## What it does
 
 ```
@@ -49,7 +73,7 @@ SETUP → SHOT 1 → [last frame] → SHOT 2 → FINISH (join + refine) → FINA
 
 ## Quick start
 
-1. Download **[`LTX23_Multishot_Lite_v1.0.zip`](./LTX23_Multishot_Lite_v1.0.zip)**
+1. Download **[`LTX23_Multishot_Lite_v1.1.zip`](./LTX23_Multishot_Lite_v1.1.zip)**
    (or just the workflow JSON) and open it in ComfyUI.
 2. Set the six loaders in the **SETUP** group — see the table in
    [INSTRUCTIONS.md](./INSTRUCTIONS.md). Each reads a *different* models folder.
