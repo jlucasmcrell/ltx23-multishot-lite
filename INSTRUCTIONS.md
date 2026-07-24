@@ -77,6 +77,38 @@ Symptom: your line comes out *plus* extra garbled words.
    test — it only skips the guidance pass; the reference tokens stay attached.
    Only Ctrl+B removes them.
 
+## 5b. Tuning motion vs. fidelity
+
+Two dials trade against each other. Both ship at sane defaults; touch them only
+if the symptom below matches.
+
+**`img_compression` (on `LTXVPreprocess`, one per shot) — ships at 35.**
+LTX is trained on *video* frames, which always carry codec artifacts. A pristine
+photo is out-of-distribution as a "video frame", so the model reads it as a
+perfect anchor and barely animates — that is the real cause of a frozen, barely
+moving mouth on shot 1. This node round-trips the guide through an H.264
+encode/decode so it looks like a frame the model recognises.
+
+* Mouth still too static -> raise toward 50-70.
+* You look soft, smoothed or "stylized" -> lower to 20-25. Compression degrades
+  the guide, so a high value costs real facial detail.
+* 0 disables it; expect a near-frozen opening.
+
+**`identity_guidance_scale` + `end_percent` (on `LTXVReferenceAudio`) — ship at
+3.0 / 0.5.** Guidance amplifies the reference's pull on the WHOLE denoised
+tensor — audio *and* video — so run across every step it restyles your face
+while it is fixing your voice. Identity is decided in the early, high-noise
+steps; fine detail forms in the late ones. `end_percent 0.5` switches guidance
+off halfway, keeping the voice lock away from the detail passes.
+
+* Face still stylized -> lower `end_percent` (0.3-0.4), **not** the scale.
+* Voice not holding -> raise the scale (4-5), leave `end_percent`.
+
+**If you change both at once you will not know which one did it.** To isolate:
+set `img_compression` to 0 on both shots and change nothing else. A sharp face
+with a frozen mouth confirms compression is your softness, and you tune up from
+there.
+
 ## 6. Length and resolution
 
 Both are set **once**, in the GLOBAL group, and feed both shots. They must
@@ -161,7 +193,8 @@ ffmpeg -i FINAL.mp4 -vf "cas=0.55" -c:v libx264 -crf 16 -preset medium \
 | A loader dropdown is empty / red | model is in the wrong folder — see §2 |
 | Line spoken *plus* garbled words | voice reference too long, or ID-LoRA missing — §5 |
 | The model reads your description aloud | exclusivity block removed from the prompt — §7 |
-| Mouth barely moves | deadpan delivery is normal; low amplitude ≠ bad sync |
+| Mouth barely moves | raise `img_compression` — see §5b |
+| Face soft / stylized / "smoothed" | lower `img_compression`, then `end_percent` — §5b |
 | Shot 2 looks unrelated to shot 1 | `ImageFromBatch → batch_index` ≠ `length − 1` |
 | ComfyUI dies during load, RAM at 100%, VRAM idle | system RAM — raise the Windows pagefile to 64–128 GB |
 | OOM in `ImageSharpen` on a long render | expected; leave it bypassed and use ffmpeg — §9 |
