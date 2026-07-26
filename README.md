@@ -31,6 +31,24 @@ Needs ComfyUI, the models, and ComfyUI-KJNodes (one node powers the extension). 
 
 ---
 
+## Quick fixes — read this first
+
+Nearly every problem reported with this workflow is one of these.
+
+| symptom | what's actually wrong | fix |
+|---|---|---|
+| **Second shot doesn't lip-sync** — voiceover over a barely-moving face | You are on **v1.x**, which chained shots on shot 1's decoded last frame. That guide is pixel-continuable, so the sampler copies it instead of animating. Structural — no setting fixes it. | Update to **v2.0+**. Shot 2 is now a true audio+video latent extension. |
+| **`LTXVAudioVideoMask` node is missing (red)** | v2 uses one node from **ComfyUI-KJNodes** for the extension. | Install ComfyUI-KJNodes. Everything else is core ComfyUI. |
+| **Burned-in subtitles or captions appear** | The graph ships at **cfg 1**, and at cfg 1 negative prompts are **inert** on distilled models — your negative is doing nothing. | Raise cfg to about **1.3** on both `CFGGuider` nodes. |
+| **The voice comes out British** | LTX drifts to a British accent unless told otherwise. | Name it affirmatively in the *positive* prompt: "in a casual American accent". |
+| **The model reads your scene description aloud** | Nothing told it which words are spoken. | Keep the exclusivity block: "She is the only person speaking, and the only voice on the audio track is hers … nothing else is read aloud." |
+| **Audio and video durations drift apart after changing length** | In **v1** the audio latent did not follow the `length` primitive — a silent desync. | Fixed in v2. Change `length`, then set the AV-extend node's `video_end_time` / `audio_end_time` to **`(length + 72) / 25`**. At the shipped 241 that is 12.52; for ~20 s use length 265 and 13.48. |
+| **Length change errors out** | LTX-2.3 hard constraints. | Frames must be **8n+1** (121, 241, 265, 329…) and both dimensions divisible by **32**. |
+| **Output is mush, or the face wanders** | Wrong checkpoint class. | This graph's 8-step sigma ladder assumes a **distilled** LTX-2.x checkpoint. A non-distilled one will not resolve in 8 steps. |
+| **Out of VRAM, or renders crawl** | A bf16 LTX-2.3 checkpoint is ~40 GB of weights. | Pick an **fp8** checkpoint in `UNETLoader` (or set `weight_dtype` to an fp8 option), and drop resolution before you drop steps. |
+
+**The one people miss most:** cfg 1 makes your negative prompt do nothing. If you are fighting burned-in text, that is why.
+
 ## v2.0 — the chained shot is now a TRUE extension (fixes chained lip sync)
 
 **If you use two shots, this release matters more than everything before it
