@@ -263,3 +263,9 @@ frames in system RAM during the join. Start at the shipped defaults.
 LTX-2 Community License. Gemma components are subject to the
 [Gemma Terms of Use](https://ai.google.dev/gemma/terms). AI-generated content
 must be disclosed as such. Not affiliated with Lightricks or Google.
+
+## Support
+
+Everything here is free and stays free. If it saved you time, you can
+[buy me a coffee](https://ko-fi.com/joeygambino) or
+[support me on Liberapay](https://liberapay.com/joeygambino).
